@@ -10,6 +10,8 @@
 # Multiple graphs may be present in one file.
 
 
+struct LGFormat <: AbstractGraphFormat end
+
 
 function _lg_read_one_graph(f::IO, n_v::Integer, n_e::Integer, directed::Bool)
     if directed
@@ -35,9 +37,13 @@ function _lg_skip_one_graph(f::IO, n_e::Integer)
     end
 end
 
-"""Returns a dictionary of (name=>graph) loaded from file `fn`."""
+"""
+    loadlg_mult(io)
+
+Return a dictionary of (name=>graph) loaded from IO stream `io`.
+"""
 function loadlg_mult(io::IO)
-    graphs = Dict{String, SimpleGraph}()
+    graphs = Dict{String, AbstractGraph}()
     while !eof(io)
         line = strip(chomp(readline(io)))
         if startswith(line,"#") || line == ""
@@ -76,12 +82,13 @@ function loadlg(io::IO, gname::String)
     error("Graph $gname not found")
 end
 
-"""Writes a graph `g` with name `graphname` in a proprietary format
-to the IO stream designated by `io`.
-
-Returns 1 (number of graphs written).
 """
-function savelg(io::IO, g::SimpleGraph, gname::String)
+    savelg(io, g, gname)
+
+Write a graph `g` with name `gname` in a proprietary format
+to the IO stream designated by `io`. Return 1 (number of graphs written).
+"""
+function savelg(io::IO, g::AbstractGraph, gname::String)
     # write header line
     dir = is_directed(g)? "d" : "u"
     line = join([nv(g), ne(g), dir, gname], ",")
@@ -93,10 +100,11 @@ function savelg(io::IO, g::SimpleGraph, gname::String)
     return 1
 end
 
-"""Writes a dictionary of (name=>graph) to a file `fn`,
-with default `GZip` compression.
+"""
+    savelg_mult(io, graphs)
 
-Returns number of graphs written.
+Write a dictionary of (name=>graph) to an IO stream `io`,
+with default `GZip` compression. Return number of graphs written.
 """
 function savelg_mult(io::IO, graphs::Dict)
     ng = 0
@@ -106,10 +114,9 @@ function savelg_mult(io::IO, graphs::Dict)
     return ng
 end
 
-# savelg(io::IO, g::SimpleGraph, n::String) =
-#     savelg_mult(io, Dict(n=>g))
 
-# write(g::Graph, fn::String; compress::Bool=true) = write(g, "graph", fn; compress=compress)
-# write(g::DiGraph, fn::String; compress::Bool=true) = write(g, "digraph", fn; compress=compress)
-
-filemap[:lg] = (loadlg, loadlg_mult, savelg, savelg_mult)
+loadgraph(io::IO, gname::String, ::LGFormat) = loadlg(io, gname)
+loadgraphs(io::IO, ::LGFormat) = loadlg_mult(io)
+savegraph(io::IO, g::AbstractGraph, gname::String, ::LGFormat) = savelg(io, g, gname)
+savegraph(io::IO, g::AbstractGraph, ::LGFormat) = savelg(io, g, "graph")
+savegraph(io::IO, d::Dict, ::LGFormat) = savelg_mult(io, d)

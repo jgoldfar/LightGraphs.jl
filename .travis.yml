@@ -5,8 +5,8 @@ os:
 #  - osx
 
 julia:
-  - 0.5
-#  - nightly # commented out due to instability of 0.6 20160926 - sbromberger
+  # - 0.5
+ - nightly
 
 notifications:
   email: false
